@@ -52,20 +52,33 @@ if task == "View Tables":
 
 elif task == "Create Table":
     table_name = st.text_input("Enter Table Name")
-    columns = st.text_area("Enter Columns Definition (e.g., id INT PRIMARY KEY, name VARCHAR(255))")
+    num_columns = st.number_input("Number of Columns", min_value=1, step=1, value=1)
+    columns = []
+    for i in range(num_columns):
+     col_name = st.text_input(f"Column {i+1} Name")
+     col_type = st.selectbox(f"Column {i+1} Data Type", ["INT", "VARCHAR(255)", "TEXT", "DATE", "FLOAT", "BOOLEAN", "DATETIME"], key=f"type_{i}")
+     col_constraints = st.text_input(f"Column {i+1} Constraints (e.g., PRIMARY KEY, NOT NULL, AUTO_INCREMENT)", key=f"const_{i}")
+     columns.append((col_name, col_type, col_constraints))
+
     if st.button("Create Table"):
-        db_obj.cursor.execute(f"CREATE TABLE {table_name} ({columns})")
+        column_definitions = ", ".join([f"{name} {dtype} {constraints}".strip() for name, dtype, constraints in columns if name])
+        query = f"CREATE TABLE {table_name} ({column_definitions})"
+        db_obj.cursor.execute(query)
         db_obj.conn.commit()
-        st.success(f"Table {table_name} created successfully")  
+        st.success(f"Table '{table_name}' created successfully!") 
 
 elif task == "Insert Record":
     table_name = st.text_input("Enter Table Name")
-    columns = st.text_input("Enter Column Names (comma-separated)")
-    values = st.text_input("Enter Values (comma-separated)")
+    if table_name:
+        db_obj.cursor.execute(f"DESCRIBE {table_name}")
+        columns = [col[0] for col in db_obj.cursor.fetchall()]
+        values = {col: st.text_input(f"Enter value for {col}", key=f"value_{col}") for col in columns}
     if st.button("Insert Record"):
-        query = f"INSERT INTO {table_name} ({columns}) VALUES ({values})"
-        db_obj.execute_commit(query)
-        st.success("Record Inserted Successfully")              
+                col_names = ", ".join(values.keys())
+                col_values = ", ".join(f"'{val}'" for val in values.values())
+                query = f"INSERT INTO {table_name} ({col_names}) VALUES ({col_values})"
+                db_obj.execute_commit(query)
+                st.success(f"Record inserted successfully into '{table_name}'!")              
         
 elif task == "Read Records":
     table_name = st.text_input("Enter Table Name")
