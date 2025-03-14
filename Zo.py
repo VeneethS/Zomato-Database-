@@ -53,19 +53,19 @@ if task == "View Tables":
 elif task == "Create Table":
     table_name = st.text_input("Enter Table Name")
     num_columns = st.number_input("Number of Columns", min_value=1, step=1, value=1)
-    columns = []
-    for i in range(num_columns):
-     col_name = st.text_input(f"Column {i+1} Name")
-     col_type = st.selectbox(f"Column {i+1} Data Type", ["INT", "VARCHAR(255)", "TEXT", "DATE", "FLOAT", "BOOLEAN", "DATETIME"], key=f"type_{i}")
-     col_constraints = st.text_input(f"Column {i+1} Constraints (e.g., PRIMARY KEY, NOT NULL, AUTO_INCREMENT)", key=f"const_{i}")
-     columns.append((col_name, col_type, col_constraints))
-
-    if st.button("Create Table"):
-        column_definitions = ", ".join([f"{name} {dtype} {constraints}".strip() for name, dtype, constraints in columns if name])
-        query = f"CREATE TABLE {table_name} ({column_definitions})"
-        db_obj.cursor.execute(query)
-        db_obj.conn.commit()
-        st.success(f"Table '{table_name}' created successfully!") 
+    column_names = [st.text_input(f"Column {i+1} Name", key=f"name_{i}") for i in range(num_columns)]
+    if st.button("Create Table") and table_name:
+            default_types = ["INT", "VARCHAR(255)", "TEXT", "DATE", "FLOAT", "BOOLEAN", "DATETIME"]
+            default_constraints = ["PRIMARY KEY", "NOT NULL", "AUTO_INCREMENT"]
+            column_definitions = []
+            for i, col_name in enumerate(column_names):
+                if col_name:
+                    col_type = default_types[i % len(default_types)] 
+                    col_constraint = default_constraints[0] if i == 0 else ""  
+                    column_definitions.append(f"{col_name} {col_type} {col_constraint}".strip())
+            query = f"CREATE TABLE {table_name} ({', '.join(column_definitions)})"
+            db_obj.execute_commit(query)
+            st.success(f"Table '{table_name}' created successfully!") 
 
 elif task == "Insert Record":
     table_name = st.text_input("Enter Table Name")
